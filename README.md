@@ -26,7 +26,8 @@ sudo apt install ros-humble-velodyne
 sudo ip addr add 192.168.7.11/24 dev enp2s0
 ```
 ## Run the Velodyne driver
-```  ros2 launch velodyne velodyne-all-nodes-VLP16-launch.py
+```
+ros2 launch velodyne velodyne-all-nodes-VLP16-launch.py
 ```
 ## Setting up MAVROS and Pixhawk
 ### Install QGroundControl
