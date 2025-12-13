@@ -1,0 +1,34 @@
+from launch import LaunchDescription
+from launch_ros.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from ament_index_python.packages import get_package_share_directory
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+
+def generate_launch_description():
+    mavros_launch = get_package_share_directory('mavros')
+
+    return LaunchDescription([
+        DeclareLaunchArgument('fcu_url', default_value='serial:///dev/ttyACM0:57600'),
+        DeclareLaunchArgument('gcs_url', default_value=''),
+        DeclareLaunchArgument('tgt_system', default_value='1'),
+        DeclareLaunchArgument('tgt_component', default_value='1'),
+        DeclareLaunchArgument('fcu_protocol', default_value='v2.0'),
+        DeclareLaunchArgument('respawn_mavros', default_value='false'),
+        DeclareLaunchArgument('namespace', default_value='mavros'),
+
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource([mavros_launch, '/launch/node_launch.py']),
+            launch_arguments={
+                'pluginlists_yaml': f'{mavros_launch}/launch/apm_pluginlists.yaml',
+                'config_yaml': f'{mavros_launch}/launch/apm_config.yaml',
+                'fcu_url': LaunchConfiguration('fcu_url'),
+                'gcs_url': LaunchConfiguration('gcs_url'),
+                'tgt_system': LaunchConfiguration('tgt_system'),
+                'tgt_component': LaunchConfiguration('tgt_component'),
+                'fcu_protocol': LaunchConfiguration('fcu_protocol'),
+                'respawn_mavros': LaunchConfiguration('respawn_mavros'),
+                'namespace': LaunchConfiguration('namespace'),
+            }.items(),
+        )
+    ])
