@@ -80,8 +80,7 @@ ros2 topic echo /mavros/imu/data
 ```
 ## Running SLAM Toolbox
 ```
-ros2 launch slam_toolbox online_async_launch.py
-
+ros2 run slam_toolbox sync_slam_toolbox_node --ros-args -p scan_topic:=/scan -p use_odom:=false -p base_frame:=base_link -p odom_frame:=odom -p map_frame:=map -p resolution:=0.05 -p mode:=mapping
 ```
 
 
