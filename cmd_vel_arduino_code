@@ -1,0 +1,119 @@
+// ======================================================
+// ESP32 DIFFERENTIAL DRIVE MOTOR CONTROLLER (FINAL FIXED)
+// Receives: "left_rpm,right_rpm\n" via Serial
+// ======================================================
+
+
+// ================= LEFT SIDE =================
+#define ENA 26     // PWM
+#define IN1 25
+#define IN2 33
+
+// ================= RIGHT SIDE =================
+#define ENB 27     // PWM
+#define IN3 32
+#define IN4 14
+
+// ================= PWM SETTINGS =================
+#define PWM_FREQ  1000     // Hz
+#define PWM_RES   8        // 0–255
+#define MAX_PWM   255
+
+// ================= CALIBRATION =================
+// Tune these ONCE
+#define MIN_PWM_LEFT   100
+#define MIN_PWM_RIGHT  100
+
+#define GAIN_LEFT   1.0
+#define GAIN_RIGHT  1.3  // keep same now, tune later if needed
+
+// ================= VARIABLES =================
+float left_rpm  = 0.0;
+float right_rpm = 0.0;
+
+
+// ======================================================
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+
+  // ESP32 Arduino Core 3.x PWM
+  ledcAttach(ENA, PWM_FREQ, PWM_RES);
+  ledcAttach(ENB, PWM_FREQ, PWM_RES);
+
+  // Stop motors
+  ledcWrite(ENA, 0);
+  ledcWrite(ENB, 0);
+
+  Serial.println("ESP32 Motor Controller READY");
+}
+
+
+// ======================================================
+void loop() {
+  if (Serial.available()) {
+    String data = Serial.readStringUntil('\n');
+    sscanf(data.c_str(), "%f,%f", &left_rpm, &right_rpm);
+    setMotorRPM(left_rpm, right_rpm);
+  }
+}
+
+
+// ======================================================
+void setMotorRPM(float left, float right) {
+
+  int pwm_left  = rpmToPWM(left,  true);
+  int pwm_right = rpmToPWM(right, false);
+
+  // -------- LEFT SIDE (FORWARD = HIGH, LOW) --------
+  if (left > 0) {
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+  } else if (left < 0) {
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+  } else {
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+  }
+
+  // -------- RIGHT SIDE (SAME LOGIC AS LEFT) --------
+  if (right > 0) {
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, HIGH);
+  } else if (right < 0) {
+    digitalWrite(IN3, HIGH);
+    digitalWrite(IN4, LOW);
+  } else {
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
+  }
+
+  // Apply PWM
+  ledcWrite(ENA, pwm_left);
+  ledcWrite(ENB, pwm_right);
+}
+
+
+// ======================================================
+// RPM → PWM WITH DEADZONE + CALIBRATION
+// ======================================================
+int rpmToPWM(float rpm, bool is_left) {
+
+  rpm = abs(rpm);
+
+  // Ignore noise
+  if (rpm < 1.0) return 0;
+
+  int   min_pwm = is_left ? MIN_PWM_LEFT : MIN_PWM_RIGHT;
+  float gain    = is_left ? GAIN_LEFT    : GAIN_RIGHT;
+
+  int pwm = map(rpm, 0, 100, min_pwm, MAX_PWM);
+  pwm = pwm * gain;
+
+  return constrain(pwm, 0, MAX_PWM);
+}
